@@ -165,4 +165,97 @@ void main() {
     expect(find.textContaining('Stroke 3:'), findsOneWidget);
     expect(find.textContaining('Stroke 4:'), findsOneWidget);
   });
+
+  testWidgets('KanjiCanvas strictly rejects shape mismatches (e.g. big L vs small vertical)', (tester) async {
+    // 1 short vertical reference stroke
+    final kanji = Kanji(
+      id: 3,
+      char: '小',
+      readings: 'ショウ',
+      meanings: 'small',
+      radicalsJson: '[]',
+      svgPaths: '["M50,20 L50,45"]', // short vertical tick (length ~ 25)
+    );
+
+    final key = GlobalKey<KanjiCanvasState>();
+    double receivedScore = 1.0;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: KanjiCanvas(
+              key: key,
+              kanji: kanji,
+              size: 250,
+              onComplete: (score) {
+                receivedScore = score;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final canvasFinder = find.byType(KanjiCanvas);
+    final center = tester.getCenter(canvasFinder);
+
+    // Draw a big L shape (down then right) instead of short vertical
+    final TestGesture gesture = await tester.startGesture(center - const Offset(50, 50));
+    await gesture.moveTo(center + const Offset(-50, 50)); // down
+    await gesture.moveTo(center + const Offset(50, 50));  // right
+    await gesture.up();
+    await tester.pump();
+
+    key.currentState?.checkScore();
+    await tester.pump();
+
+    // The score must be low (< 0.40) and definitely NOT green (>= 0.70)
+    expect(receivedScore, lessThan(0.40));
+  });
+
+  testWidgets('KanjiCanvas flags and penalizes extra strokes with Extra Stroke Invalid chips', (tester) async {
+    // 2-stroke kanji (e.g. 人)
+    final kanji = Kanji(
+      id: 4,
+      char: '人',
+      readings: 'ジン',
+      meanings: 'person',
+      radicalsJson: '[]',
+      svgPaths: '["M50,20 L25,80", "M50,45 L75,80"]',
+    );
+
+    final key = GlobalKey<KanjiCanvasState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: KanjiCanvas(
+              key: key,
+              kanji: kanji,
+              size: 250,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final canvasFinder = find.byType(KanjiCanvas);
+    final center = tester.getCenter(canvasFinder);
+
+    // Draw 3 strokes (1 extra stroke)
+    for (int i = 0; i < 3; i++) {
+      final gesture = await tester.startGesture(center + Offset(i * 10.0, -30));
+      await gesture.moveTo(center + Offset(i * 10.0, 30));
+      await gesture.up();
+      await tester.pump();
+    }
+
+    key.currentState?.checkScore();
+    await tester.pump();
+
+    // Expect Extra Stroke chip
+    expect(find.text('Extra Stroke 3: Invalid'), findsOneWidget);
+  });
 }

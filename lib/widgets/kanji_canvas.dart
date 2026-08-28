@@ -106,27 +106,61 @@ class KanjiCanvasState extends State<KanjiCanvas> {
   double _evaluateStrokePair(List<Offset> refStroke, List<Offset> userStroke, double canvasSize) {
     if (refStroke.isEmpty || userStroke.isEmpty) return 0.0;
 
+    // 1. Length calculation on raw points before resampling
+    double refLength = 0.0;
+    for (int i = 1; i < refStroke.length; i++) {
+      refLength += (refStroke[i] - refStroke[i - 1]).distance;
+    }
+    double userLength = 0.0;
+    for (int i = 1; i < userStroke.length; i++) {
+      userLength += (userStroke[i] - userStroke[i - 1]).distance;
+    }
+
+    // Length Ratio penalty: allows normal handwriting variation (0.6x to 1.6x)
+    // but heavily penalizes drawing a huge L for a short tick or vice versa
+    double lengthFactor = 1.0;
+    if (refLength > 0 && userLength > 0) {
+      final ratio = userLength / refLength;
+      if (ratio < 0.60) {
+        lengthFactor = (1.0 - (0.60 - ratio) * 1.5).clamp(0.0, 1.0);
+      } else if (ratio > 1.60) {
+        lengthFactor = (1.0 - (ratio - 1.60) * 0.9).clamp(0.0, 1.0);
+      }
+    }
+
     final ref = _resample(refStroke, 30);
     final user = _resample(userStroke, 30);
 
-    // 1. Direction & Trajectory check: compare start-to-end vector alignment
+    // 2. Direction & Trajectory check (Vector alignment between start and end)
     final refVec = ref.last - ref.first;
     final userVec = user.last - user.first;
     final refLen = refVec.distance;
     final userLen = userVec.distance;
 
-    // If stroke has noticeable length (> 6% of canvas size), check direction angle
-    if (refLen > canvasSize * 0.06 && userLen > canvasSize * 0.06) {
+    double dirScore = 1.0;
+    if (refLen > canvasSize * 0.04 && userLen > canvasSize * 0.04) {
       final dot = (refVec.dx * userVec.dx + refVec.dy * userVec.dy) / (refLen * userLen);
-      // If dot product is strongly negative (angle > 115 deg), stroke was drawn in reverse direction
-      if (dot < -0.35) {
-        return 0.15; // Severe penalty for reverse stroke direction
+      if (dot >= 0.50) {
+        dirScore = 1.0; // Within 60 degrees of expected angle
+      } else if (dot >= 0.0) {
+        dirScore = (0.40 + 0.60 * (dot / 0.50)).clamp(0.0, 1.0);
+      } else {
+        // Reverse direction (angle > 90 degrees)
+        dirScore = 0.10;
       }
     }
 
-    // 2. Windowed Dynamic Time Warping (DTW) distance with window size 6
+    // 3. Curvature & Midpoint Shape Check (Differentiating straight lines from L/corners)
+    final refChordMid = (ref.first + ref.last) / 2.0;
+    final userChordMid = (user.first + user.last) / 2.0;
+    final refSagitta = (ref[15] - refChordMid).distance;
+    final userSagitta = (user[15] - userChordMid).distance;
+    final bendDiff = (userSagitta - refSagitta).abs() / canvasSize;
+    final shapeFactor = (1.0 - bendDiff * 2.5).clamp(0.20, 1.0);
+
+    // 4. Windowed Dynamic Time Warping (DTW) distance (Window size = 10 for handwriting elasticity)
     const int n = 30;
-    const int w = 6;
+    const int w = 10;
     final List<List<double>> dtw = List.generate(n + 1, (_) => List.filled(n + 1, double.infinity));
     dtw[0][0] = 0.0;
 
@@ -153,16 +187,18 @@ class KanjiCanvasState extends State<KanjiCanvas> {
       avgDist = avgDist / (2.0 * n);
     }
 
-    // 3. Endpoint alignment penalty
+    // 5. Normalized DTW and Endpoint alignment
+    final normDist = avgDist / (canvasSize * 0.24);
+    final dtwSim = (1.0 - normDist).clamp(0.0, 1.0);
+
     final startDist = (ref.first - user.first).distance;
     final endDist = (ref.last - user.last).distance;
-    final endpointPenalty = (startDist + endDist) / (2.0 * canvasSize);
+    final endpointDist = (startDist + endDist) / (2.0 * canvasSize);
+    final endpointSim = (1.0 - endpointDist * 1.5).clamp(0.0, 1.0);
 
-    // 4. Normalized distance relative to canvas size
-    final normDist = avgDist / (canvasSize * 0.38);
-
-    double similarity = (1.0 - normDist - endpointPenalty * 0.30).clamp(0.0, 1.0);
-    return similarity;
+    // Composite accuracy score
+    final double rawSim = (dtwSim * 0.40 + endpointSim * 0.25 + dirScore * 0.20 + shapeFactor * 0.15) * lengthFactor;
+    return rawSim.clamp(0.0, 1.0);
   }
 
   void checkScore() {
@@ -213,11 +249,14 @@ class KanjiCanvasState extends State<KanjiCanvas> {
       userStrokes.add(List<Offset>.from(_currentStroke));
     }
 
+    final int expectedCount = svgStrokes.length;
+    final int drawnCount = userStrokes.length;
+
     // No user input
     if (userStrokes.isEmpty) {
       setState(() {
         _lastScore = 0.0;
-        _strokeAccuracy = List.filled(svgStrokes.length, 0.0);
+        _strokeAccuracy = List.filled(expectedCount, 0.0);
       });
       if (widget.onComplete != null) widget.onComplete!(0.0);
       return;
@@ -233,9 +272,9 @@ class KanjiCanvasState extends State<KanjiCanvas> {
     double totalAccuracy = 0.0;
     List<double> strokeAccuracies = [];
 
-    // Evaluate each reference stroke
-    for (int i = 0; i < svgStrokes.length; i++) {
-      if (i < userStrokes.length) {
+    // Evaluate each expected stroke 1-to-1
+    for (int i = 0; i < expectedCount; i++) {
+      if (i < drawnCount) {
         final strokeSim = _evaluateStrokePair(svgStrokes[i], userStrokes[i], widget.size);
         strokeAccuracies.add(strokeSim);
         totalAccuracy += strokeSim;
@@ -245,12 +284,16 @@ class KanjiCanvasState extends State<KanjiCanvas> {
       }
     }
 
-    // Extra strokes penalty
-    int extraStrokes = max(0, userStrokes.length - svgStrokes.length);
-    double extraPenalty = extraStrokes * 0.15;
+    // Extra strokes drawn beyond expected count (explicitly graded 0.0 / Invalid)
+    int extraCount = max(0, drawnCount - expectedCount);
+    for (int i = expectedCount; i < drawnCount; i++) {
+      strokeAccuracies.add(0.0);
+    }
 
-    int totalExpected = max(svgStrokes.length, userStrokes.length);
-    double finalScore = totalExpected > 0 ? ((totalAccuracy - extraPenalty) / totalExpected).clamp(0.0, 1.0) : 0.0;
+    // Extra stroke penalty (each extra stroke penalizes the final grade)
+    double extraPenalty = extraCount * 0.20;
+    double divisor = (expectedCount + extraCount * 0.5).toDouble();
+    double finalScore = divisor > 0 ? ((totalAccuracy - extraPenalty) / divisor).clamp(0.0, 1.0) : 0.0;
 
     setState(() {
       _lastScore = finalScore;
@@ -462,14 +505,19 @@ class KanjiCanvasState extends State<KanjiCanvas> {
                       .map((entry) {
                         int index = entry.key;
                         double accuracy = entry.value;
-                        Color color = accuracy >= 0.70
-                            ? Colors.green
-                            : accuracy >= 0.45
-                                ? Colors.amber
-                                : Colors.red;
+                        bool isExtra = index >= pathStrings.length;
+                        Color color = isExtra
+                            ? Colors.red
+                            : accuracy >= 0.70
+                                ? Colors.green
+                                : accuracy >= 0.45
+                                    ? Colors.amber
+                                    : Colors.red;
                         return Chip(
                           label: Text(
-                            'Stroke ${index + 1}: ${(accuracy * 100).toStringAsFixed(0)}%',
+                            isExtra
+                                ? 'Extra Stroke ${index + 1}: Invalid'
+                                : 'Stroke ${index + 1}: ${(accuracy * 100).toStringAsFixed(0)}%',
                             style: const TextStyle(fontSize: 11),
                           ),
                           padding: EdgeInsets.zero,
