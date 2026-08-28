@@ -1,0 +1,188 @@
+<schema
+  xmlns='http://www.w3.org/2000/10/XMLSchema'
+  targetNamespace='http://www.w3.org/namespace/'
+  xmlns:t='http://www.w3.org/namespace/'>
+
+ <element name='kanjidic2'>
+  <complexType>
+   <sequence>
+    <element ref='t:header'/>
+    <element ref='t:character' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='header'>
+  <complexType>
+   <sequence>
+    <element ref='t:file_version'/>
+    <element ref='t:database_version'/>
+    <element ref='t:date_of_creation'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='file_version'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='database_version'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='date_of_creation'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='character'>
+  <complexType>
+   <sequence minOccurs='0' maxOccurs='unbounded'>
+    <element ref='t:literal'/>
+    <element ref='t:codepoint'/>
+    <element ref='t:radical'/>
+    <element ref='t:misc'/>
+    <element ref='t:dic_number' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:query_code' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:reading_meaning' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:nanori' minOccurs='0' maxOccurs='1'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='literal'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='codepoint'>
+  <complexType>
+   <sequence>
+    <element ref='t:cp_value' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='cp_value'>
+  <complexType mixed='true'>
+   <attribute name='cp_type' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='radical'>
+  <complexType>
+   <sequence>
+    <element ref='t:rad_value' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='rad_value'>
+  <complexType mixed='true'>
+   <attribute name='rad_type' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='misc'>
+  <complexType>
+   <sequence>
+    <element ref='t:grade' minOccurs='0' maxOccurs='1'/>
+    <element ref='t:stroke_count' maxOccurs='unbounded'/>
+    <element ref='t:variant' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:freq' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:rad_name' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='grade'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='stroke_count'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='variant'>
+  <complexType mixed='true'>
+   <attribute name='var_type' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='freq'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='rad_name'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='dic_number'>
+  <complexType>
+   <sequence>
+    <element ref='t:dic_ref' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='dic_ref'>
+  <complexType mixed='true'>
+   <attribute name='m_page' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='query_code'>
+  <complexType>
+   <sequence>
+    <element ref='t:q_code' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='q_code'>
+  <complexType mixed='true'>
+   <attribute name='qc_type' type='string' use='required'/>
+  </complexType>
+ </element>
+
+ <element name='reading_meaning'>
+  <complexType>
+   <sequence>
+    <element ref='t:rmgroup' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:nanori' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='nanori'>
+  <complexType mixed='true'>
+  </complexType>
+ </element>
+
+ <element name='rmgroup'>
+  <complexType>
+   <sequence>
+    <element ref='t:reading' minOccurs='0' maxOccurs='unbounded'/>
+    <element ref='t:meaning' minOccurs='0' maxOccurs='unbounded'/>
+   </sequence>
+  </complexType>
+ </element>
+
+ <element name='reading'>
+  <complexType mixed='true'>
+   <attribute name='r_status' type='string' use='optional'/>
+  </complexType>
+ </element>
+
+ <element name='meaning'>
+  <complexType mixed='true'>
+   <attribute name='m_lang' type='string' use='optional'/>
+  </complexType>
+ </element>
+</schema>

@@ -1,0 +1,1 @@
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; void main() async { sqfliteFfiInit(); var db = await databaseFactoryFfi.openDatabase('C:/StudioProjects/kanjiapp/assets/data/kanji.db'); var res = await db.rawQuery('SELECT jlpt, COUNT(*) as c FROM kanji GROUP BY jlpt'); print(res); }
