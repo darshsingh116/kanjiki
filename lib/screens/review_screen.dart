@@ -527,27 +527,57 @@ class _ReviewScreenState extends State<ReviewScreen> {
           child: SafeArea(
             top: false,
             child: !_showAnswer
-                ? SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-                      onPressed: () {
-                        setState(() => _showAnswer = true);
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _canvasKey.currentState?.checkScore();
-                        });
-                      },
-                      child: const Text('Show Answer', style: TextStyle(fontSize: 18, color: Colors.white)),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                ? Row(
                     children: [
-                      _AnswerButton(label: 'Again', color: Colors.redAccent, onPressed: () => _answerCard(0)),
-                      _AnswerButton(label: 'Hard', color: Colors.orangeAccent, onPressed: () => _answerCard(3)),
-                      _AnswerButton(label: 'Good', color: Colors.greenAccent, onPressed: () => _answerCard(4)),
-                      _AnswerButton(label: 'Easy', color: Colors.lightBlueAccent, onPressed: () => _answerCard(5)),
+                      if (_history.isNotEmpty) ...[
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.undo, color: Colors.white),
+                          tooltip: 'Undo Last Card (Ctrl+Z)',
+                          onPressed: _undoLastReview,
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFF2D2D44),
+                            padding: const EdgeInsets.all(14),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: SizedBox(
+                          height: 54,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                            onPressed: () {
+                              setState(() => _showAnswer = true);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _canvasKey.currentState?.checkScore();
+                              });
+                            },
+                            child: const Text('Show Answer', style: TextStyle(fontSize: 18, color: Colors.white)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _AnswerButton(label: 'Again', color: Colors.redAccent, onPressed: () => _answerCard(0)),
+                          _AnswerButton(label: 'Hard', color: Colors.orangeAccent, onPressed: () => _answerCard(3)),
+                          _AnswerButton(label: 'Good', color: Colors.greenAccent, onPressed: () => _answerCard(4)),
+                          _AnswerButton(label: 'Easy', color: Colors.lightBlueAccent, onPressed: () => _answerCard(5)),
+                        ],
+                      ),
+                      if (_history.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: _undoLastReview,
+                          icon: const Icon(Icons.undo, size: 16, color: Colors.white70),
+                          label: const Text('Undo Previous Card (Ctrl+Z)', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        ),
+                      ],
                     ],
                   ),
           ),

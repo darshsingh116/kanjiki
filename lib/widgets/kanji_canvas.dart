@@ -415,7 +415,7 @@ class KanjiCanvasState extends State<KanjiCanvas> {
                     painter: _GridPainter(),
                   ),
                 ),
-                if (widget.showGuide && pathStrings.isNotEmpty)
+                if ((widget.showGuide || _strokeAccuracy != null) && pathStrings.isNotEmpty)
                   Positioned.fill(
                     child: CustomPaint(
                       painter: _SvgPathPainter(
@@ -651,25 +651,30 @@ class _SvgPathPainter extends CustomPainter {
     for (int i = 0; i < paths.length; i++) {
       final p = paths[i];
 
-      Color strokeColor = Colors.grey.withValues(alpha: 0.5);
+      Color strokeColor = Colors.grey.withValues(alpha: 0.35);
+      double strokeWidth = 3.5;
       if (strokeAccuracy != null) {
         if (i < strokeAccuracy!.length) {
           final acc = strokeAccuracy![i];
-          if (acc < 0.45) {
-            strokeColor = Colors.red.withValues(alpha: 0.5);
-          } else if (acc >= 0.70) {
-            strokeColor = Colors.green.withValues(alpha: 0.5);
+          if (acc >= 0.70) {
+            strokeColor = Colors.green.withValues(alpha: 0.85);
+            strokeWidth = 4.5;
+          } else if (acc >= 0.45) {
+            strokeColor = Colors.orange.withValues(alpha: 0.85);
+            strokeWidth = 4.5;
           } else {
-            strokeColor = Colors.orange.withValues(alpha: 0.5);
+            strokeColor = Colors.red.withValues(alpha: 0.85);
+            strokeWidth = 4.5;
           }
         } else {
-          strokeColor = Colors.red.withValues(alpha: 0.5);
+          strokeColor = Colors.red.withValues(alpha: 0.85);
+          strokeWidth = 4.5;
         }
       }
 
       final paint = Paint()
         ..color = strokeColor
-        ..strokeWidth = 4
+        ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
 
@@ -686,14 +691,37 @@ class _SvgPathPainter extends CustomPainter {
     for (int i = 0; i < strokeStarts.length; i++) {
       try {
         final scaledPos = strokeStarts[i] * scale;
+        Color numColor = Colors.blueAccent;
+        if (strokeAccuracy != null && i < strokeAccuracy!.length) {
+          final acc = strokeAccuracy![i];
+          if (acc >= 0.70) {
+            numColor = Colors.green;
+          } else if (acc >= 0.45) {
+            numColor = Colors.orange;
+          } else {
+            numColor = Colors.red;
+          }
+        }
+
+        // Circular background badge behind stroke number for crisp readability
+        final bgPaint = Paint()
+          ..color = Colors.white.withValues(alpha: 0.95)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(scaledPos, 9.0, bgPaint);
+
+        final borderPaint = Paint()
+          ..color = numColor
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke;
+        canvas.drawCircle(scaledPos, 9.0, borderPaint);
+
         final textPainter = TextPainter(
           text: TextSpan(
             text: '${i + 1}',
-            style: const TextStyle(
-              color: Colors.blue,
-              fontSize: 14,
+            style: TextStyle(
+              color: numColor,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
-              backgroundColor: Colors.white70,
             ),
           ),
           textDirection: TextDirection.ltr,
