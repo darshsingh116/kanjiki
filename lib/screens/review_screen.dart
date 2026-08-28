@@ -6,6 +6,7 @@ import 'dart:async';
 import '../models/kanji.dart';
 import '../services/db_service.dart';
 import '../widgets/kanji_canvas.dart';
+import '../theme/app_theme.dart';
 
 class _ReviewHistoryItem {
   final Kanji kanji;
@@ -61,13 +62,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _frontMode = widget.frontMode ?? 'both'; // Default fallback
+    _frontMode = widget.frontMode ?? 'both';
     _loadQueue();
   }
 
   Future<void> _loadQueue() async {
     if (widget.deckId != null) {
-      // Look up deck settings to get frontMode first (if possible)
       final decks = await DbService.getDecks();
       final deck = decks.firstWhere((d) => d['id'] == widget.deckId,
           orElse: () => <String, dynamic>{});
@@ -86,7 +86,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
         _isLoading = false;
       });
     } else {
-      // General review (all decks)
       final cards = await DbService.getReviewQueue();
       setState(() {
         _queue = cards;
@@ -101,7 +100,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final Kanji current = _queue.first;
     final now = DateTime.now();
 
-    // Snapshot state for Undo
     final int prevReps = current.reps;
     final double prevEase = current.easeFactor;
     final double prevInterval = current.intervalDays;
@@ -109,13 +107,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final List<Kanji> prevQueueSnapshot = List<Kanji>.from(_queue);
     final bool wasNew = current.reps == 0 && current.dueDate == null;
 
-    // SM-2 day-based logic
     if (quality == 0) {
       // Again (fail)
       current.reps = 0;
       current.intervalDays = 0;
       current.easeFactor = max(1.3, current.easeFactor - 0.20);
-      current.dueDate = DateTime.now(); // Due immediately in learning queue
+      current.dueDate = DateTime.now();
     } else {
       if (current.reps == 0) {
         current.intervalDays = quality == 5 ? 4.0 : 1.0;
@@ -136,14 +133,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
       }
       current.reps += 1;
 
-      // Day-based due date (starts at 00:00:00 on target calendar day)
       final targetDate = DateTime(now.year, now.month, now.day + current.intervalDays.round());
       current.dueDate = targetDate;
     }
 
     await DbService.updateSRS(current);
-    
-    // Always log review for limits tracking and Undo history
+
     String? logId;
     if (current.deckId != null) {
       logId = await DbService.logReview(current.id, current.deckId, wasNew);
@@ -165,9 +160,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
       _showAnswer = false;
       _reviewAttempt++;
       if (quality > 0) {
-        _queue.removeAt(0); // Card graduated / done for now
+        _queue.removeAt(0);
       } else {
-        // Move "Again" card to back of queue
         _queue.removeAt(0);
         _queue.add(current);
       }
@@ -180,7 +174,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final last = _history.removeLast();
     final card = last.kanji;
 
-    // Restore prior card SRS properties
     card.reps = last.previousReps;
     card.easeFactor = last.previousEase;
     card.intervalDays = last.previousInterval;
@@ -203,7 +196,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Undid review for ${card.char}'),
+          backgroundColor: AppColors.surfaceElevated,
+          content: Text('Undid review for ${card.char}', style: const TextStyle(color: Colors.white)),
           duration: const Duration(seconds: 1),
           behavior: SnackBarBehavior.floating,
         ),
@@ -213,9 +207,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
   Widget _buildFront(Kanji kanji) {
     if (_frontMode == 'kanji') {
-      return Text(kanji.char, style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.white));
+      return Text(kanji.char, style: const TextStyle(fontSize: 68, fontWeight: FontWeight.bold, color: Colors.white));
     } else {
-      return Text(kanji.meanings, style: const TextStyle(fontSize: 28, color: Colors.white), textAlign: TextAlign.center);
+      return Text(kanji.meanings, style: const TextStyle(fontSize: 26, color: Colors.white, fontWeight: FontWeight.w600), textAlign: TextAlign.center);
     }
   }
 
@@ -223,11 +217,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(kanji.meanings, style: const TextStyle(fontSize: 18, color: Colors.white70), textAlign: TextAlign.center),
+        Text(kanji.meanings, style: const TextStyle(fontSize: 18, color: AppColors.textSecondary, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
         const SizedBox(height: 4),
-        Text(kanji.readings, style: const TextStyle(fontSize: 16, color: Colors.yellowAccent), textAlign: TextAlign.center),
+        Text(kanji.readings, style: const TextStyle(fontSize: 16, color: AppColors.amber, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
         const SizedBox(height: 12),
-        Text(kanji.char, style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(kanji.char, style: const TextStyle(fontSize: 58, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 16),
         _buildRadicals(kanji),
       ],
@@ -242,7 +236,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
       }
     } catch (_) {}
 
-    // Fallback: If kanji itself is a primary radical or has no sub-radicals, show itself
     if (radicals.isEmpty) {
       radicals = [
         {'part': kanji.char, 'meaning': kanji.meanings}
@@ -250,25 +243,37 @@ class _ReviewScreenState extends State<ReviewScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.purple.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.5), width: 1),
+      padding: const EdgeInsets.all(14),
+      decoration: AppStyles.neoCardDecoration(
+        bg: AppColors.surfaceElevated,
+        borderColor: AppColors.purple.withValues(alpha: 0.5),
+        radius: 12,
+        withShadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Components & Mnemonics',
-            style: TextStyle(
-              color: Colors.purpleAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(color: AppColors.pink, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Components & Mnemonics',
+                style: TextStyle(
+                  color: AppColors.pink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -279,17 +284,17 @@ class _ReviewScreenState extends State<ReviewScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black45,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(part, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    if (part.isNotEmpty && meaning.isNotEmpty)
-                      const SizedBox(width: 6),
+                    Text(part, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    if (part.isNotEmpty && meaning.isNotEmpty) const SizedBox(width: 6),
                     Flexible(
-                      child: Text(meaning, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      child: Text(meaning, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -305,16 +310,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF121212),
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: AppColors.bgDark,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
 
     if (_queue.isEmpty) {
       return Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: AppColors.bgDark,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF1E1E2C),
+          backgroundColor: AppColors.surface,
           actions: [
             if (_history.isNotEmpty)
               IconButton(
@@ -325,34 +330,68 @@ class _ReviewScreenState extends State<ReviewScreen> {
           ],
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.check_circle_outline,
-                  color: Colors.green, size: 80),
-              const SizedBox(height: 20),
-              const Text('All reviews finished!',
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: AppStyles.neoCardDecoration(
+                bg: AppColors.surface,
+                borderColor: AppColors.border,
+                radius: 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_history.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12.0),
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.undo),
-                        onPressed: _undoLastReview,
-                        label: const Text('Undo Last Card'),
-                      ),
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.green, width: 2),
                     ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Go Back'),
+                    child: const Icon(Icons.check_circle_outline, color: AppColors.green, size: 36),
                   ),
+                  const SizedBox(height: 20),
+                  const Text('All Reviews Finished!', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Great job! You have cleared all due and new cards for this session.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_history.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12.0),
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.cyan,
+                              side: const BorderSide(color: AppColors.cyan, width: 1.5),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            ),
+                            icon: const Icon(Icons.undo, size: 16),
+                            onPressed: _undoLastReview,
+                            label: const Text('Undo Last Card'),
+                          ),
+                        ),
+                      ElevatedButton(
+                        style: AppStyles.neoButtonStyle(
+                          bg: AppColors.primary,
+                          borderColor: AppColors.primaryLight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Return Home', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  )
                 ],
-              )
-            ],
+              ),
+            ),
           ),
         ),
       );
@@ -369,10 +408,21 @@ class _ReviewScreenState extends State<ReviewScreen> {
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          backgroundColor: const Color(0xFF121212),
+          backgroundColor: AppColors.bgDark,
           appBar: AppBar(
-            title: Text('${_queue.length} remaining'),
-            backgroundColor: const Color(0xFF1E1E2C),
+            backgroundColor: AppColors.surface,
+            title: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.border, width: 1),
+              ),
+              child: Text(
+                '${_queue.length} remaining',
+                style: const TextStyle(color: AppColors.cyan, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ),
             actions: [
               if (_history.isNotEmpty)
                 IconButton(
@@ -381,17 +431,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   onPressed: _undoLastReview,
                 ),
               Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Center(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purpleAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    onPressed: () => setState(() => _isLearnMode = !_isLearnMode),
-                    icon: Icon(_isLearnMode ? Icons.close : Icons.school),
-                    label: Text(_isLearnMode ? 'Exit Learn' : 'Learn Mode'),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _isLearnMode ? AppColors.pink : AppColors.primaryLight,
+                    side: BorderSide(color: _isLearnMode ? AppColors.pink : AppColors.borderLight, width: 1.5),
+                    backgroundColor: AppColors.surfaceElevated,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
+                  onPressed: () => setState(() => _isLearnMode = !_isLearnMode),
+                  icon: Icon(_isLearnMode ? Icons.close : Icons.school, size: 16),
+                  label: Text(_isLearnMode ? 'Exit Guide' : 'Learn Mode', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
               )
             ],
@@ -411,34 +462,50 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final canvasSize = (screenHeight * 0.35).clamp(200.0, 300.0);
 
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: AppStyles.neoCardDecoration(
+                  bg: AppColors.surface,
+                  borderColor: AppColors.border,
+                  radius: 18,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(kanji.char, style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.white)),
-                    const SizedBox(height: 16),
+                    Text(kanji.char, style: const TextStyle(fontSize: 68, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const SizedBox(height: 14),
                     _buildRadicals(kanji),
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.blue, width: 2),
+                      decoration: AppStyles.neoCardDecoration(
+                        bg: AppColors.surfaceElevated,
+                        borderColor: AppColors.cyan.withValues(alpha: 0.5),
+                        radius: 14,
+                        withShadow: false,
                       ),
                       child: Column(
                         children: [
-                          const Text('Stroke Order Guide', style: TextStyle(color: Colors.blue, fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 12),
-                          Text('Number of strokes: $strokeCount', style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.touch_app, size: 16, color: AppColors.cyan),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Stroke Guide ($strokeCount strokes)',
+                                style: const TextStyle(color: AppColors.cyan, fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
                           KanjiCanvas(
                             key: ValueKey('learn_${kanji.id}'),
                             kanji: kanji,
@@ -450,79 +517,91 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.green, width: 1),
+                      padding: const EdgeInsets.all(14),
+                      decoration: AppStyles.neoCardDecoration(
+                        bg: AppColors.surfaceElevated,
+                        borderColor: AppColors.border,
+                        radius: 12,
+                        withShadow: false,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Information:', style: TextStyle(color: Colors.greenAccent, fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Text('Readings: ${kanji.readings}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                          const SizedBox(height: 8),
-                          Text('Meaning: ${kanji.meanings}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                          Text('Readings: ${kanji.readings}', style: const TextStyle(color: AppColors.amber, fontSize: 14, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          Text('Meanings: ${kanji.meanings}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildReviewMode(Kanji kanji) {
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final canvasSize = (screenHeight * 0.35).clamp(200.0, 300.0); // responsive canvas
+    final canvasSize = (screenHeight * 0.35).clamp(200.0, 300.0);
 
     return Column(
       children: [
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 560),
                 child: Column(
                   children: [
-                    const SizedBox(height: 10),
-                    if (!_showAnswer)
-                      _buildFront(kanji)
-                    else
-                      _buildBackTop(kanji),
-                    const SizedBox(height: 20),
-                    KanjiCanvas(
-                      key: _canvasKey,
-                      kanji: kanji,
-                      resetKey: _reviewAttempt,
-                      showGuide: _showAnswer,
-                      showCheckButton: true,
-                      size: canvasSize,
-                      onComplete: (score) {
-                        if (!_showAnswer && score >= 0.85) {
-                          setState(() => _showAnswer = true);
-                        }
-                      },
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                      decoration: AppStyles.neoCardDecoration(
+                        bg: AppColors.surface,
+                        borderColor: AppColors.border,
+                        radius: 18,
+                      ),
+                      child: Column(
+                        children: [
+                          if (!_showAnswer) _buildFront(kanji) else _buildBackTop(kanji),
+                          const SizedBox(height: 16),
+                          KanjiCanvas(
+                            key: _canvasKey,
+                            kanji: kanji,
+                            resetKey: _reviewAttempt,
+                            showGuide: _showAnswer,
+                            showCheckButton: true,
+                            size: canvasSize,
+                            onComplete: (score) {
+                              if (!_showAnswer && score >= 0.85) {
+                                setState(() => _showAnswer = true);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
             ),
           ),
         ),
+
         // Sticky Bottom SRS Buttons
         Container(
-          color: const Color(0xFF1E1E2C),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border, width: 1.5)),
+          ),
           padding: const EdgeInsets.all(12.0),
           child: SafeArea(
             top: false,
@@ -535,24 +614,30 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           tooltip: 'Undo Last Card (Ctrl+Z)',
                           onPressed: _undoLastReview,
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFF2D2D44),
+                            backgroundColor: AppColors.surfaceElevated,
+                            side: const BorderSide(color: AppColors.border, width: 1.5),
                             padding: const EdgeInsets.all(14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                       ],
                       Expanded(
                         child: SizedBox(
-                          height: 54,
+                          height: 52,
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                            style: AppStyles.neoButtonStyle(
+                              bg: AppColors.primary,
+                              borderColor: AppColors.primaryLight,
+                              radius: 12,
+                            ),
                             onPressed: () {
                               setState(() => _showAnswer = true);
                               WidgetsBinding.instance.addPostFrameCallback((_) {
                                 _canvasKey.currentState?.checkScore();
                               });
                             },
-                            child: const Text('Show Answer', style: TextStyle(fontSize: 18, color: Colors.white)),
+                            child: const Text('Show Answer', style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ),
@@ -564,18 +649,28 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _AnswerButton(label: 'Again', color: Colors.redAccent, onPressed: () => _answerCard(0)),
-                          _AnswerButton(label: 'Hard', color: Colors.orangeAccent, onPressed: () => _answerCard(3)),
-                          _AnswerButton(label: 'Good', color: Colors.greenAccent, onPressed: () => _answerCard(4)),
-                          _AnswerButton(label: 'Easy', color: Colors.lightBlueAccent, onPressed: () => _answerCard(5)),
+                          _AnswerButton(label: 'Again', color: AppColors.srsLearn, onPressed: () => _answerCard(0)),
+                          _AnswerButton(label: 'Hard', color: AppColors.amber, onPressed: () => _answerCard(3)),
+                          _AnswerButton(label: 'Good', color: AppColors.srsReview, onPressed: () => _answerCard(4)),
+                          _AnswerButton(label: 'Easy', color: AppColors.srsEasy, onPressed: () => _answerCard(5)),
                         ],
                       ),
                       if (_history.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        TextButton.icon(
-                          onPressed: _undoLastReview,
-                          icon: const Icon(Icons.undo, size: 16, color: Colors.white70),
-                          label: const Text('Undo Previous Card (Ctrl+Z)', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        const SizedBox(height: 6),
+                        InkWell(
+                          onTap: _undoLastReview,
+                          borderRadius: BorderRadius.circular(6),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.undo, size: 14, color: AppColors.textMuted),
+                                SizedBox(width: 4),
+                                Text('Undo Previous Card (Ctrl+Z)', style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -608,8 +703,11 @@ class _AnswerButton extends StatelessWidget {
   final Color color;
   final VoidCallback onPressed;
 
-  const _AnswerButton(
-      {required this.label, required this.color, required this.onPressed});
+  const _AnswerButton({
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -618,15 +716,18 @@ class _AnswerButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: color.withValues(alpha: 0.2), // Dark mode friendly tint
-            side: BorderSide(color: color, width: 2), // Outline
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            backgroundColor: color.withValues(alpha: 0.18),
+            foregroundColor: color,
+            side: BorderSide(color: color, width: 1.5),
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           onPressed: onPressed,
-          child: Text(label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          child: Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
         ),
       ),
     );

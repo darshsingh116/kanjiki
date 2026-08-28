@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/kanji.dart';
 import '../widgets/kanji_canvas.dart';
+import '../theme/app_theme.dart';
 
 class PracticeScreen extends StatefulWidget {
   final Kanji kanji;
@@ -35,7 +36,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
       }
     } catch (_) {}
 
-    // Fallback: If kanji itself is a primary radical or has no sub-radicals, show itself
     if (radicals.isEmpty) {
       radicals = [
         {'part': kanji.char, 'meaning': kanji.meanings}
@@ -43,25 +43,37 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.purple.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.purple.withValues(alpha: 0.5), width: 1),
+      padding: const EdgeInsets.all(14),
+      decoration: AppStyles.neoCardDecoration(
+        bg: AppColors.surfaceElevated,
+        borderColor: AppColors.purple.withValues(alpha: 0.5),
+        radius: 12,
+        withShadow: false,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Components & Mnemonics',
-            style: TextStyle(
-              color: Colors.purpleAccent,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(color: AppColors.pink, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'Components & Mnemonics',
+                style: TextStyle(
+                  color: AppColors.pink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -72,17 +84,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black45,
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(part, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    if (part.isNotEmpty && meaning.isNotEmpty)
-                      const SizedBox(width: 6),
+                    Text(part, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    if (part.isNotEmpty && meaning.isNotEmpty) const SizedBox(width: 6),
                     Flexible(
-                      child: Text(meaning, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                      child: Text(meaning, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ),
                   ],
                 ),
@@ -99,24 +111,27 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final kanji = widget.kanji;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.bgDark,
       appBar: AppBar(
+        backgroundColor: AppColors.surface,
         title: Text(
-          kanji.char,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          'Kanji: ${kanji.char}',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFF1E1E2C),
         actions: [
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purpleAccent,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _isLearnMode ? AppColors.cyan : AppColors.pink,
+                side: BorderSide(color: _isLearnMode ? AppColors.cyan : AppColors.pink, width: 1.5),
+                backgroundColor: AppColors.surfaceElevated,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () => setState(() => _isLearnMode = !_isLearnMode),
-              icon: Icon(_isLearnMode ? Icons.edit : Icons.school),
-              label: Text(_isLearnMode ? 'Practice Mode' : 'Learn Mode'),
+              icon: Icon(_isLearnMode ? Icons.edit : Icons.school, size: 16),
+              label: Text(_isLearnMode ? 'Practice Mode' : 'Learn Mode', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           )
         ],
@@ -133,75 +148,87 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final canvasSize = (screenHeight * 0.35).clamp(200.0, 300.0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                kanji.char,
-                style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 16),
-              _buildRadicals(kanji),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue, width: 2),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Stroke Order Guide',
-                      style: TextStyle(color: Colors.blue, fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Number of strokes: $strokeCount',
-                      style: const TextStyle(color: Colors.white70, fontSize: 16),
-                    ),
-                    const SizedBox(height: 12),
-                    KanjiCanvas(
-                      key: ValueKey('learn_${kanji.id}'),
-                      kanji: kanji,
-                      showGuide: true,
-                      showCheckButton: false,
-                      size: canvasSize,
-                      onComplete: null,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green, width: 1),
+                padding: const EdgeInsets.all(20),
+                decoration: AppStyles.neoCardDecoration(
+                  bg: AppColors.surface,
+                  borderColor: AppColors.border,
+                  radius: 18,
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Information:',
-                      style: TextStyle(color: Colors.greenAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                    Text(
+                      kanji.char,
+                      style: const TextStyle(fontSize: 68, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
-                    Text('Readings: ${kanji.readings}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    Text('Meaning: ${kanji.meanings}', style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    if (kanji.jlpt != null) ...[
-                      const SizedBox(height: 8),
-                      Text('JLPT: N${kanji.jlpt == 4 ? "5" : kanji.jlpt == 3 ? "4" : kanji.jlpt == 2 ? "3/2" : "1"}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    ],
+                    const SizedBox(height: 14),
+                    _buildRadicals(kanji),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: AppStyles.neoCardDecoration(
+                        bg: AppColors.surfaceElevated,
+                        borderColor: AppColors.cyan.withValues(alpha: 0.5),
+                        radius: 14,
+                        withShadow: false,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.touch_app, size: 16, color: AppColors.cyan),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Stroke Guide ($strokeCount strokes)',
+                                style: const TextStyle(color: AppColors.cyan, fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          KanjiCanvas(
+                            key: ValueKey('learn_${kanji.id}'),
+                            kanji: kanji,
+                            showGuide: true,
+                            showCheckButton: false,
+                            size: canvasSize,
+                            onComplete: null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: AppStyles.neoCardDecoration(
+                        bg: AppColors.surfaceElevated,
+                        borderColor: AppColors.border,
+                        radius: 12,
+                        withShadow: false,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Readings: ${kanji.readings}', style: const TextStyle(color: AppColors.amber, fontSize: 14, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          Text('Meanings: ${kanji.meanings}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 14)),
+                          if (kanji.jlpt != null) ...[
+                            const SizedBox(height: 6),
+                            Text('JLPT: N${kanji.jlpt == 4 ? "5" : kanji.jlpt == 3 ? "4" : kanji.jlpt == 2 ? "3/2" : "1"}',
+                                style: const TextStyle(color: AppColors.cyan, fontSize: 13, fontWeight: FontWeight.bold)),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -220,54 +247,69 @@ class _PracticeScreenState extends State<PracticeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 560),
           child: Column(
             children: [
-              Text(
-                kanji.meanings,
-                style: const TextStyle(fontSize: 20, color: Colors.white70),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                kanji.readings,
-                style: const TextStyle(fontSize: 16, color: Colors.yellowAccent),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              if (_showAnswer) ...[
-                Text(
-                  kanji.char,
-                  style: const TextStyle(fontSize: 52, fontWeight: FontWeight.bold, color: Colors.white),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                decoration: AppStyles.neoCardDecoration(
+                  bg: AppColors.surface,
+                  borderColor: AppColors.border,
+                  radius: 18,
                 ),
-                const SizedBox(height: 8),
-              ],
-              const SizedBox(height: 8),
-              KanjiCanvas(
-                key: _canvasKey,
-                kanji: kanji,
-                showGuide: _showAnswer,
-                showCheckButton: true,
-                size: canvasSize,
-                onComplete: (score) {
-                  if (!_showAnswer && score >= 0.85) {
-                    setState(() => _showAnswer = true);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () {
-                  setState(() => _showAnswer = !_showAnswer);
-                },
-                icon: Icon(_showAnswer ? Icons.visibility_off : Icons.visibility),
-                label: Text(_showAnswer ? 'Hide Guide' : 'Show Guide'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueAccent,
-                  side: const BorderSide(color: Colors.blueAccent),
+                child: Column(
+                  children: [
+                    Text(
+                      kanji.meanings,
+                      style: const TextStyle(fontSize: 22, color: Colors.white, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      kanji.readings,
+                      style: const TextStyle(fontSize: 16, color: AppColors.amber, fontWeight: FontWeight.w600),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_showAnswer) ...[
+                      Text(
+                        kanji.char,
+                        style: const TextStyle(fontSize: 54, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    KanjiCanvas(
+                      key: _canvasKey,
+                      kanji: kanji,
+                      showGuide: _showAnswer,
+                      showCheckButton: true,
+                      size: canvasSize,
+                      onComplete: (score) {
+                        if (!_showAnswer && score >= 0.85) {
+                          setState(() => _showAnswer = true);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() => _showAnswer = !_showAnswer);
+                      },
+                      icon: Icon(_showAnswer ? Icons.visibility_off : Icons.visibility, size: 16),
+                      label: Text(_showAnswer ? 'Hide Guide' : 'Show Guide'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryLight,
+                        side: const BorderSide(color: AppColors.borderLight, width: 1.5),
+                        backgroundColor: AppColors.surfaceElevated,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               _buildRadicals(kanji),
               const SizedBox(height: 24),
             ],

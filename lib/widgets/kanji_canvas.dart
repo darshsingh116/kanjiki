@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:path_drawing/path_drawing.dart';
 import '../models/kanji.dart';
+import '../theme/app_theme.dart';
 
 class KanjiCanvas extends StatefulWidget {
   final Kanji kanji;
@@ -388,26 +389,52 @@ class KanjiCanvasState extends State<KanjiCanvas> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (_lastScore != null) ...[
-          Text(
-            'Score: ${(_lastScore! * 100).toStringAsFixed(1)}%',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _lastScore! > 0.8 ? Colors.green : Colors.orangeAccent,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: (_lastScore! >= 0.70
+                      ? AppColors.green
+                      : _lastScore! >= 0.45
+                          ? AppColors.amber
+                          : AppColors.red)
+                  .withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: _lastScore! >= 0.70
+                    ? AppColors.green
+                    : _lastScore! >= 0.45
+                        ? AppColors.amber
+                        : AppColors.red,
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              'Stroke Score: ${(_lastScore! * 100).toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: _lastScore! >= 0.70
+                    ? AppColors.green
+                    : _lastScore! >= 0.45
+                        ? AppColors.amber
+                        : AppColors.red,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
         ],
         Container(
           width: widget.size,
           height: widget.size,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: Colors.white38, width: 2),
-            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderLight, width: 2),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppStyles.neoShadow(offset: 3),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             child: Stack(
               children: [
                 Positioned.fill(
@@ -452,30 +479,44 @@ class KanjiCanvasState extends State<KanjiCanvas> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            IconButton(
-              icon: const Icon(Icons.undo, color: Colors.white70),
+            IconButton.filledTonal(
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.surfaceElevated,
+                side: const BorderSide(color: AppColors.border, width: 1.5),
+                padding: const EdgeInsets.all(10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.undo, color: AppColors.textPrimary, size: 20),
               onPressed: undo,
               tooltip: 'Undo stroke',
             ),
             if (widget.showCheckButton) ...[
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               ElevatedButton.icon(
                 onPressed: checkScore,
-                icon: const Icon(Icons.check),
-                label: const Text('Check'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
+                icon: const Icon(Icons.check, size: 18),
+                label: const Text('Check Stroke', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: AppStyles.neoButtonStyle(
+                  bg: AppColors.primary,
+                  borderColor: AppColors.primaryLight,
+                  radius: 10,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ],
-            const SizedBox(width: 16),
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white70),
+            const SizedBox(width: 14),
+            IconButton.filledTonal(
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.surfaceElevated,
+                side: const BorderSide(color: AppColors.border, width: 1.5),
+                padding: const EdgeInsets.all(10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.refresh, color: AppColors.textPrimary, size: 20),
               onPressed: clear,
               tooltip: 'Clear canvas',
             ),

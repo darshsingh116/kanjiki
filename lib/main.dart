@@ -8,6 +8,8 @@ import 'package:kanjiapp/services/db_service.dart';
 import 'package:kanjiapp/services/env_service.dart';
 import 'package:kanjiapp/services/supabase_service.dart';
 import 'package:kanjiapp/services/sync_service.dart';
+import 'package:kanjiapp/theme/app_theme.dart';
+import 'package:kanjiapp/widgets/profile_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -69,31 +71,38 @@ class _KanjiKiAppState extends State<KanjiKiApp> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF2D2D44),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.border, width: 1.5),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.sync, color: Colors.blueAccent),
+                Icon(Icons.sync, color: AppColors.primary),
                 SizedBox(width: 10),
-                Text("Sync with Cloud?", style: TextStyle(color: Colors.white, fontSize: 18)),
+                Text("Sync with Cloud?", style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
               ],
             ),
             content: const Text(
               "Would you like to sync your decks and spaced-repetition progress with the cloud now?",
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("Later", style: TextStyle(color: Colors.grey)),
+                child: const Text("Later", style: TextStyle(color: AppColors.textMuted)),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                style: AppStyles.neoButtonStyle(
+                  bg: AppColors.primary,
+                  borderColor: AppColors.primaryLight,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
                 onPressed: () {
                   Navigator.pop(ctx);
                   SyncService.syncData(context);
                 },
-                child: const Text("Sync Now", style: TextStyle(color: Colors.white)),
+                child: const Text("Sync Now", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -136,29 +145,38 @@ class _KanjiKiAppState extends State<KanjiKiApp> {
     super.dispose();
   }
 
+  Future<void> _handleSignOut() async {
+    final userId = SupabaseService.currentUser?.id;
+    if (userId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_sync_$userId');
+    }
+    try {
+      await SupabaseService.client.auth.signOut();
+    } catch (_) {}
+    await DbService.clearUserData();
+    if (!mounted) return;
+    setState(() {
+      _didInitialSync = false;
+      _isGuestMode = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final userLabel = _userLabel;
-
-    final baseTheme = ThemeData.dark(useMaterial3: true).copyWith(
-      scaffoldBackgroundColor: const Color(0xFF121212),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
-    );
+    final appTheme = buildAppTheme();
 
     if (!_isAuthenticated && !_isGuestMode) {
       return MaterialApp(
         navigatorKey: navigatorKey,
         scaffoldMessengerKey: scaffoldMessengerKey,
         title: 'KanjiKi',
-        theme: baseTheme,
+        theme: appTheme,
         debugShowCheckedModeBanner: false,
         home: SafeArea(
           child: Container(
-            color: const Color(0xFF121212),
+            color: AppColors.bgDark,
             child: AuthScreen(
               onContinueAsGuest: () {
                 setState(() => _isGuestMode = true);
@@ -169,81 +187,164 @@ class _KanjiKiAppState extends State<KanjiKiApp> {
       );
     }
 
-    // Logged in or Guest mode -> Home + user status header
+    final String initialChar = (_isAuthenticated && userLabel != null && userLabel.isNotEmpty)
+        ? userLabel[0].toUpperCase()
+        : 'G';
+
+    // Logged in or Guest mode -> Home + sleek neobrutalist header
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'KanjiKi',
-      theme: baseTheme,
+      theme: appTheme,
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Column(
           children: [
-            Material(
-              color: const Color(0xFF1E1E2C),
-              elevation: 0,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isAuthenticated
-                            ? 'Signed in as: ${userLabel ?? ''}'
-                            : 'Offline / Guest Mode',
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    if (_isAuthenticated)
-                      OutlinedButton(
-                        onPressed: () async {
-                          final userId = SupabaseService.client.auth.currentUser?.id;
-                          if (userId != null) {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.remove('last_sync_$userId');
-                          }
-                          await SupabaseService.client.auth.signOut();
-                          await DbService.clearUserData();
-                          if (!mounted) return;
-                          setState(() {
-                            _didInitialSync = false;
-                            _isGuestMode = false;
-                          });
+            // Top Neobrutalist Profile Bar
+            Container(
+              decoration: const BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border, width: 1.5),
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: Row(
+                    children: [
+                      // Clickable Profile Avatar & Badge
+                      InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () {
+                          ProfileBottomSheet.show(
+                            context,
+                            onSignOut: _handleSignOut,
+                            onSignIn: () => setState(() => _isGuestMode = false),
+                          );
                         },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.blueAccent),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        ),
-                        child: const Text(
-                          'Sign out',
-                          style: TextStyle(color: Colors.blueAccent, fontSize: 13),
-                        ),
-                      )
-                    else
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.cloud_sync, size: 16, color: Colors.blueAccent),
-                        onPressed: () {
-                          setState(() => _isGuestMode = false);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.blueAccent),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        ),
-                        label: const Text(
-                          'Sign In for Cloud Sync',
-                          style: TextStyle(color: Colors.blueAccent, fontSize: 13),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: _isAuthenticated ? AppColors.primary : AppColors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _isAuthenticated ? AppColors.primaryLight : AppColors.border,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  initialChar,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      _isAuthenticated ? (userLabel ?? 'User') : 'Guest Explorer',
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textMuted),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: _isAuthenticated ? AppColors.green : AppColors.amber,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _isAuthenticated ? 'Cloud Synced' : 'Offline Mode',
+                                      style: TextStyle(
+                                        color: _isAuthenticated ? AppColors.green : AppColors.amber,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                  ],
+                      const Spacer(),
+
+                      // Action Button on Top Bar
+                      if (_isAuthenticated)
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            SyncService.syncData(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: AppColors.surfaceElevated,
+                            side: const BorderSide(color: AppColors.borderLight, width: 1.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          icon: const Icon(Icons.sync, size: 14, color: AppColors.cyan),
+                          label: const Text(
+                            'Sync',
+                            style: TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        )
+                      else
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.bolt, size: 14, color: Colors.white),
+                          onPressed: () {
+                            setState(() => _isGuestMode = false);
+                          },
+                          style: AppStyles.neoButtonStyle(
+                            bg: AppColors.primary,
+                            borderColor: AppColors.primaryLight,
+                            radius: 8,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          ),
+                          label: const Text(
+                            'Sign In',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
 
             Expanded(
               child: RefreshIndicator(
+                color: AppColors.primary,
+                backgroundColor: AppColors.surface,
                 onRefresh: () => _maybeInitialSync(force: true),
                 child: const HomeScreen(),
               ),
