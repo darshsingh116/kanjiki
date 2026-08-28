@@ -8,14 +8,25 @@ class EnvService {
 
   /// Loads config for Supabase keys:
   /// - Supports compile-time --dart-define flags (preferred in production/CI/CD)
-  /// - Supports local .env file (for local development)
-  /// - Supports assets/env.json (for local web dev)
+  /// - Supports local .env file (for local development on Web & Mobile)
+  /// - Supports assets/env.json (for local web dev fallback)
   static Future<void> loadDotEnv() async {
-    // If dart-define already provides keys, no need to load asset files.
+    // 1. If dart-define already provides keys, no need to load asset files.
     if (_fromDartDefine('SUPABASE_URL').isNotEmpty) {
       return;
     }
 
+    // 2. Try loading .env via flutter_dotenv (works on both Web and Mobile/Desktop)
+    try {
+      await dotenv.load(fileName: '.env');
+      if (dotenv.isInitialized && (dotenv.env['SUPABASE_URL']?.isNotEmpty ?? false)) {
+        return;
+      }
+    } catch (_) {
+      // .env is optional
+    }
+
+    // 3. Fallback for Web: check assets/env.json if available
     if (kIsWeb) {
       try {
         final raw = await rootBundle.loadString('assets/env.json');
@@ -26,15 +37,8 @@ class EnvService {
             ..addAll(decoded.map((k, v) => MapEntry(k.toString(), (v ?? '').toString())));
         }
       } catch (_) {
-        // Fallback to --dart-define
+        // ignore
       }
-      return;
-    }
-
-    try {
-      await dotenv.load(fileName: '.env');
-    } catch (_) {
-      // If .env is missing or not in assets, it will fallback to --dart-define
     }
   }
 
@@ -53,14 +57,7 @@ class EnvService {
     final dartDefineVal = _fromDartDefine(key);
     if (dartDefineVal.isNotEmpty) return dartDefineVal;
 
-    // 2. Web fallback (local assets/env.json if available)
-    if (kIsWeb) {
-      final v = _webEnv[key];
-      if (v != null && v.trim().isNotEmpty) return v.trim();
-      return '';
-    }
-
-    // 3. Mobile/desktop fallback (.env via dotenv)
+    // 2. Check dotenv (works on both Web and Mobile if .env is present)
     try {
       if (dotenv.isInitialized) {
         final val = dotenv.env[key];
@@ -68,6 +65,12 @@ class EnvService {
       }
     } catch (_) {
       // ignore
+    }
+
+    // 3. Web fallback (local assets/env.json if available)
+    if (kIsWeb) {
+      final v = _webEnv[key];
+      if (v != null && v.trim().isNotEmpty) return v.trim();
     }
 
     return '';

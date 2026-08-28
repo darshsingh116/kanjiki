@@ -7,14 +7,18 @@
             "type": "dart",
             "program": "lib/main.dart",
             "args": [
-                "--no-web-resources-cdn"
+                "--no-web-resources-cdn",
+                "--dart-define-from-file=.env"
             ]
         },
         {
             "name": "KanjiKi (Mobile/Desktop)",
             "request": "launch",
             "type": "dart",
-            "program": "lib/main.dart"
+            "program": "lib/main.dart",
+            "args": [
+                "--dart-define-from-file=.env"
+            ]
         }
     ]
 }
