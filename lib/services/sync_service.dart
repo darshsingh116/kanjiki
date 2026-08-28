@@ -19,45 +19,52 @@ class SyncService {
 
   /// Checks whether there are un-synced local changes waiting to be pushed to Supabase.
   static Future<bool> hasPendingLocalChanges() async {
-    final userId = SupabaseService.client.auth.currentUser?.id;
-    if (userId == null) return false;
+    if (!SupabaseService.isAuthenticated) return false;
 
-    final prefs = await SharedPreferences.getInstance();
-    final syncKey = 'last_sync_$userId';
-    final int lastSync = prefs.getInt(syncKey) ?? 0;
+    try {
+      final userId = SupabaseService.currentUser?.id;
+      if (userId == null) return false;
 
-    final db = DbService.db;
+      final prefs = await SharedPreferences.getInstance();
+      final syncKey = 'last_sync_$userId';
+      final int lastSync = prefs.getInt(syncKey) ?? 0;
 
-    // Check for updated decks
-    final localDecks = await db.query(
-      'decks',
-      where: 'updated_at > ?',
-      whereArgs: [lastSync],
-      limit: 1,
-    );
-    if (localDecks.isNotEmpty) return true;
+      final db = DbService.db;
 
-    // Check for updated deck cards / progress
-    final localCards = await db.query(
-      'deck_cards',
-      where: lastSync == 0
-          ? 'reps > 0 OR due_date IS NOT NULL OR updated_at > 0'
-          : 'updated_at > ?',
-      whereArgs: lastSync == 0 ? null : [lastSync],
-      limit: 1,
-    );
-    if (localCards.isNotEmpty) return true;
+      // Check for updated decks
+      final localDecks = await db.query(
+        'decks',
+        where: 'updated_at > ?',
+        whereArgs: [lastSync],
+        limit: 1,
+      );
+      if (localDecks.isNotEmpty) return true;
 
-    // Check for updated review logs
-    final localLogs = await db.query(
-      'review_logs',
-      where: 'updated_at > ?',
-      whereArgs: [lastSync],
-      limit: 1,
-    );
-    if (localLogs.isNotEmpty) return true;
+      // Check for updated deck cards / progress
+      final localCards = await db.query(
+        'deck_cards',
+        where: lastSync == 0
+            ? 'reps > 0 OR due_date IS NOT NULL OR updated_at > 0'
+            : 'updated_at > ?',
+        whereArgs: lastSync == 0 ? null : [lastSync],
+        limit: 1,
+      );
+      if (localCards.isNotEmpty) return true;
 
-    return false;
+      // Check for updated review logs
+      final localLogs = await db.query(
+        'review_logs',
+        where: 'updated_at > ?',
+        whereArgs: [lastSync],
+        limit: 1,
+      );
+      if (localLogs.isNotEmpty) return true;
+
+      return false;
+    } catch (e) {
+      debugPrint("Error checking pending local changes: $e");
+      return false;
+    }
   }
 
   /// Formats raw exception strings into user-friendly error messages.

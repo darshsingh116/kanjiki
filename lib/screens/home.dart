@@ -40,29 +40,40 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final decks = await DbService.getDecks();
-    final counts = await DbService.getJlptCounts();
-    final pendingSync = await SyncService.hasPendingLocalChanges();
+    try {
+      final decks = await DbService.getDecks();
+      final counts = await DbService.getJlptCounts();
+      final pendingSync = await SyncService.hasPendingLocalChanges();
 
-    List<Map<String, dynamic>> decksWithStats = [];
-    for (var d in decks) {
-      final deckStats = await DbService.getStats(deckId: d['id'].toString());
-      decksWithStats.add({
-        ...d,
-        'learning': deckStats['learning'],
-        'review': deckStats['review'],
-        'due': deckStats['due'],
-        'new': deckStats['new'],
-        'total': deckStats['total'],
-      });
+      List<Map<String, dynamic>> decksWithStats = [];
+      for (var d in decks) {
+        final deckStats = await DbService.getStats(deckId: d['id'].toString());
+        decksWithStats.add({
+          ...d,
+          'learning': deckStats['learning'],
+          'review': deckStats['review'],
+          'due': deckStats['due'],
+          'new': deckStats['new'],
+          'total': deckStats['total'],
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _decks = decksWithStats;
+          _jlptCounts = counts;
+          _hasPendingSync = pendingSync;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading home screen data: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-
-    setState(() {
-      _decks = decksWithStats;
-      _jlptCounts = counts;
-      _hasPendingSync = pendingSync;
-      _isLoading = false;
-    });
   }
 
   void _showAddDeckOptions() {

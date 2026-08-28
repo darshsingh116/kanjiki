@@ -12,6 +12,17 @@ class SupabaseService {
     return Supabase.instance.client;
   }
 
+  static SupabaseClient? get clientOrNull => _isInitialized ? Supabase.instance.client : null;
+
+  static User? get currentUser {
+    if (!_isInitialized) return null;
+    try {
+      return Supabase.instance.client.auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static bool get isInitialized => _isInitialized;
 
   static Future<void> init() async {
@@ -43,7 +54,7 @@ class SupabaseService {
   static bool get isAuthenticated {
     if (!_isInitialized) return false;
     try {
-      return client.auth.currentUser != null;
+      return Supabase.instance.client.auth.currentUser != null;
     } catch (_) {
       return false;
     }

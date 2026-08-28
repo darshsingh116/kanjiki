@@ -11,6 +11,11 @@ class EnvService {
   /// - Supports local .env file (for local development)
   /// - Supports assets/env.json (for local web dev)
   static Future<void> loadDotEnv() async {
+    // If dart-define already provides keys, no need to load asset files.
+    if (_fromDartDefine('SUPABASE_URL').isNotEmpty) {
+      return;
+    }
+
     if (kIsWeb) {
       try {
         final raw = await rootBundle.loadString('assets/env.json');
