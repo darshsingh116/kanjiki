@@ -662,5 +662,7 @@ class _SvgPathPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SvgPathPainter oldDelegate) {
+    return oldDelegate.paths != paths || oldDelegate.strokeAccuracy != strokeAccuracy;
+  }
 }

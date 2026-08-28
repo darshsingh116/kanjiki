@@ -501,18 +501,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       _buildBackTop(kanji),
                     const SizedBox(height: 20),
                     KanjiCanvas(
-                      key: ValueKey('review_${kanji.id}_$_reviewAttempt'),
+                      key: _canvasKey,
                       kanji: kanji,
                       resetKey: _reviewAttempt,
                       showGuide: _showAnswer,
-                      showCheckButton: false,
+                      showCheckButton: true,
                       size: canvasSize,
                       onComplete: (score) {
                         if (!_showAnswer && score >= 0.85) {
                           setState(() => _showAnswer = true);
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                             _canvasKey.currentState?.checkScore();
-                          });
                         }
                       },
                     ),

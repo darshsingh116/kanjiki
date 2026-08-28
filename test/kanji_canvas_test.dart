@@ -156,5 +156,13 @@ void main() {
 
     // With only 1 of 4 strokes drawn, score cannot exceed 0.30
     expect(receivedScore, lessThan(0.35));
+
+    // Verify score UI text and stroke chips are displayed
+    expect(find.textContaining('Score:'), findsOneWidget);
+    expect(find.text('Stroke Status:'), findsOneWidget);
+    expect(find.textContaining('Stroke 1:'), findsOneWidget);
+    expect(find.textContaining('Stroke 2:'), findsOneWidget);
+    expect(find.textContaining('Stroke 3:'), findsOneWidget);
+    expect(find.textContaining('Stroke 4:'), findsOneWidget);
   });
 }
