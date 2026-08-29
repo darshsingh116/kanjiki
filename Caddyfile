@@ -1,0 +1,16 @@
+kanjiki.com:443 {
+	root * /usr/share/caddy
+	encode gzip zstd
+
+	# Flutter's own service worker / bootstrap files must always revalidate;
+	# everything else (JS/CSS/CanvasKit/assets) is content-hashed and safe
+	# to cache forever.
+	@noCache path /index.html /flutter_service_worker.js /flutter_bootstrap.js /version.json
+	header @noCache Cache-Control "no-cache"
+
+	@immutable path /assets/* /canvaskit/* /icons/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	try_files {path} /index.html
+	file_server
+}

@@ -67,3 +67,6 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Docker / local Supabase stack
+docker/postgres/seed/*.csv
+

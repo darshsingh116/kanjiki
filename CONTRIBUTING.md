@@ -14,7 +14,7 @@ Thank you for your interest in contributing to KanjiKi! We appreciate community 
 3. **Set Up Local Environment:**
    - Run `flutter pub get`
    - Test locally using `flutter run`
-   - If testing cloud sync, use your own development Supabase project via `.env`.
+   - If testing cloud sync, either use your own development Supabase project via `.env`, **or** run a full local Supabase backend with Docker — see [`DEV.md`](DEV.md) (`./scripts/dev_up.sh`, then `cp env.local.example .env`).
 4. **Follow Project Conventions:**
    - Adhere to the standard Flutter lint rules specified in `analysis_options.yaml`.
    - Never commit sensitive API keys or passwords.

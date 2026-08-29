@@ -1,0 +1,35 @@
+# Production deployment: just the Flutter Web app, served by Caddy.
+# Point it at a real Supabase project (hosted or self-hosted) — NOT the
+# demo-keyed local stack in docker-compose.yml.
+#
+#   cp env.production.example .env.production   # fill in real values
+#   ./scripts/build_web_prod.sh
+# (equivalent to: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build)
+#
+# With CADDY_DOMAIN set, Caddy automatically provisions Let's Encrypt TLS
+# for that domain and serves on 80/443; point the domain's DNS at this host.
+# See PROD.md for the full reference.
+
+name: kanjiki-prod
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+      args:
+        SUPABASE_URL: ${SUPABASE_URL:?Set SUPABASE_URL to your Supabase project URL}
+        SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?Set SUPABASE_ANON_KEY to your Supabase anon key}
+    restart: unless-stopped
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,21 @@
+# OPTIONAL dev helper: builds a debug APK inside Docker for people without
+# the Android SDK installed locally. Not part of the normal dev loop — if
+# you have `flutter` + the Android SDK locally, just use `flutter run`
+# against the stack from docker-compose.yml instead.
+#
+#   ./scripts/build_android_debug.sh
+# or:
+#   docker compose -f docker-compose.android.yml --env-file .env.docker run --rm android
+
+name: kanjiki-android
+
+services:
+  android:
+    build:
+      context: .
+      target: android-debug
+      args:
+        SUPABASE_URL: ${SUPABASE_URL:-http://localhost:8000}
+        SUPABASE_ANON_KEY: ${ANON_KEY}
+    volumes:
+      - ./build/app/outputs/flutter-apk:/out

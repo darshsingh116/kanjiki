@@ -1,0 +1,21 @@
+# Only the Flutter web build needs to run inside Docker — keep the build
+# context small and reproducible.
+.git/
+.github/
+.dart_tool/
+.vscode/
+.idea/
+build/
+docker/
+*.md
+
+# Native platforms not needed for `flutter build web`
+android/
+ios/
+linux/
+macos/
+windows/
+
+.env
+.env.*
+!.env.example
