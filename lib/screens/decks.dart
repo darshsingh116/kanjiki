@@ -33,7 +33,7 @@ class _DecksScreenState extends State<DecksScreen> {
         builder: (context) {
           return StatefulBuilder(builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text('\ Settings'),
+              title: Text('${deck['name']} Settings'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

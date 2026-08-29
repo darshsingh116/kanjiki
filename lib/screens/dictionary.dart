@@ -378,15 +378,15 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
           if (_isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
           else if (_results.isEmpty)
-            Expanded(
+            const Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.search_off, size: 48, color: AppColors.textMuted),
-                    const SizedBox(height: 12),
-                    const Text('No Kanji Found', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    Icon(Icons.search_off, size: 48, color: AppColors.textMuted),
+                    SizedBox(height: 12),
+                    Text('No Kanji Found', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 4),
                     Text('Try searching with different keywords or JLPT filters', style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
                   ],
                 ),

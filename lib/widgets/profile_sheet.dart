@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/db_service.dart';
 import '../services/supabase_service.dart';
 import '../services/sync_service.dart';
@@ -225,10 +224,10 @@ class _ProfileBottomSheetState extends State<ProfileBottomSheet> {
                     ),
                   ),
                   Container(width: 1.5, height: 36, color: AppColors.border),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           '100%',
                           style: TextStyle(
                             color: AppColors.green,
@@ -236,8 +235,8 @@ class _ProfileBottomSheetState extends State<ProfileBottomSheet> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
+                        SizedBox(height: 2),
+                        Text(
                           'Offline Ready',
                           style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.bold),
                         ),
