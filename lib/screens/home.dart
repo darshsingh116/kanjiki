@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import '../services/db_service.dart';
+import '../services/supabase_service.dart';
 import 'dictionary.dart';
 import 'deck_browser.dart';
 import 'review_screen.dart';
 import 'deck_options.dart';
+import 'profile_screen.dart';
 import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onSignOut;
+  final VoidCallback? onSignIn;
+
+  const HomeScreen({
+    super.key,
+    this.onSignOut,
+    this.onSignIn,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -37,6 +46,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       _loadData();
     }
+  }
+
+  String _getMaskedEmail(String rawEmail) {
+    if (!rawEmail.contains('@')) return rawEmail;
+    final parts = rawEmail.split('@');
+    final username = parts[0];
+    final domain = parts[1];
+    if (username.isEmpty) return rawEmail;
+    final firstChar = username[0];
+    final int maskLength = username.length > 1 ? username.length - 1 : 4;
+    final stars = '*' * maskLength;
+    return '$firstChar$stars@$domain';
   }
 
   Future<void> _loadData() async {
@@ -489,115 +510,198 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       drawer: Drawer(
         backgroundColor: AppColors.surface,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceElevated,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.border, width: 2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primaryLight, width: 2),
-                      boxShadow: AppStyles.neoShadow(offset: 2),
-                    ),
-                    child: const Center(
-                      child: Text('気', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+        child: Builder(
+          builder: (drawerCtx) {
+            final isAuthed = SupabaseService.isAuthenticated;
+            final user = isAuthed ? SupabaseService.currentUser : null;
+            final String rawEmail = user?.email ?? 'Guest User';
+            final String maskedEmail = isAuthed ? _getMaskedEmail(rawEmail) : 'Offline Mode';
+            final String initial = rawEmail.isNotEmpty ? rawEmail[0].toUpperCase() : 'G';
+
+            return ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.border, width: 2),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'KanjiKi 漢字気',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const Text(
-                    'Spaced Repetition & Stroke Master',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: Material(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(10),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DictionaryScreen()),
-                    ).then((_) => _loadData());
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border, width: 1.5),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.search, color: AppColors.cyan, size: 20),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text('Dictionary & Search', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.primaryLight, width: 2),
+                          boxShadow: AppStyles.neoShadow(offset: 2),
                         ),
-                        Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.textMuted),
-                      ],
+                        child: const Center(
+                          child: Text('気', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'KanjiKi 漢字気',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Spaced Repetition & Stroke Master',
+                        style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // My Profile & Account Menu Item
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Material(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pop(drawerCtx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfileScreen(
+                              onSignOut: widget.onSignOut,
+                              onSignIn: widget.onSignIn,
+                            ),
+                          ),
+                        ).then((_) => _loadData());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border, width: 1.5),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: isAuthed ? AppColors.primary : AppColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: isAuthed ? AppColors.primaryLight : AppColors.border, width: 1.5),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('My Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Text(
+                                    maskedEmail,
+                                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: isAuthed ? AppColors.cyan : AppColors.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Text(
-                'JLPT PRESET DECKS',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted, fontSize: 11, letterSpacing: 0.8),
-              ),
-            ),
-            _buildJlptDrawerItem(context, 5, 'JLPT N5 (Beginner)'),
-            _buildJlptDrawerItem(context, 4, 'JLPT N4 (Basic)'),
-            _buildJlptDrawerItem(context, 3, 'JLPT N3 (Intermediate)'),
-            _buildJlptDrawerItem(context, 2, 'JLPT N2 (Upper Int)'),
-            _buildJlptDrawerItem(context, 1, 'JLPT N1 (Advanced)'),
-            const SizedBox(height: 8),
-            const Divider(color: AppColors.border),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Text(
-                'BACKUP & DATA',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted, fontSize: 11, letterSpacing: 0.8),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_upload_outlined, color: AppColors.green, size: 20),
-              title: const Text('Export Backup (.ktan)', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
-              onTap: () async {
-                Navigator.pop(context);
-                await DbService.exportDatabase();
-              },
-            ),
-          ],
+
+                // Dictionary & Search Menu Item
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Material(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pop(drawerCtx);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DictionaryScreen()),
+                        ).then((_) => _loadData());
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border, width: 1.5),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.search, color: AppColors.cyan, size: 20),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text('Dictionary & Search', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                            ),
+                            Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    'JLPT PRESET DECKS',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted, fontSize: 11, letterSpacing: 0.8),
+                  ),
+                ),
+                _buildJlptDrawerItem(context, 5, 'JLPT N5 (Beginner)'),
+                _buildJlptDrawerItem(context, 4, 'JLPT N4 (Basic)'),
+                _buildJlptDrawerItem(context, 3, 'JLPT N3 (Intermediate)'),
+                _buildJlptDrawerItem(context, 2, 'JLPT N2 (Upper Int)'),
+                _buildJlptDrawerItem(context, 1, 'JLPT N1 (Advanced)'),
+                const SizedBox(height: 8),
+                const Divider(color: AppColors.border),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    'BACKUP & DATA',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textMuted, fontSize: 11, letterSpacing: 0.8),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.file_upload_outlined, color: AppColors.green, size: 20),
+                  title: const Text('Export Backup (.ktan)', style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                  onTap: () async {
+                    Navigator.pop(drawerCtx);
+                    await DbService.exportDatabase();
+                  },
+                ),
+              ],
+            );
+          },
         ),
       ),
       body: _decks.isEmpty
