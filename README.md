@@ -1,9 +1,46 @@
 <div align="center">
-  <img src="assets/icons/kanjiki_icon.svg" width="112" height="112" alt="KanjiKi Logo" />
+  <img src="assets/icons/kanjiki_icon.svg" width="120" height="120" alt="KanjiKi Logo" />
   <h1>KanjiKi (漢字気)</h1>
   <p><strong>A modern, multi-platform spaced-repetition Japanese Kanji learning application</strong></p>
   <p>Offline-first SQLite storage • Stroke-order recognition canvas • Multi-device cloud sync via Supabase</p>
+
+  <p>
+    <a href="https://kanjiki.com"><strong>🌐 Try Live Web App (kanjiki.com)</strong></a> •
+    <a href="https://github.com/YOUR_USERNAME/kanjiapp/releases/latest"><strong>📱 Download Android APK</strong></a> •
+    <a href="#-quickstart--development"><strong>💻 Developer Setup</strong></a>
+  </p>
+
+  <p>
+    <a href="https://kanjiki.com"><img src="https://img.shields.io/badge/Live%20Web-kanjiki.com-705DF2?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Live Web App" /></a>
+    <a href="https://github.com/YOUR_USERNAME/kanjiapp/releases/latest"><img src="https://img.shields.io/badge/Download-Android%20APK-10B981?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
+    <img src="https://img.shields.io/badge/License-AGPL%20v3-06B6D4?style=for-the-badge" alt="License" />
+    <img src="https://img.shields.io/badge/Flutter-3.5+-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
+  </p>
 </div>
+
+---
+
+## 🚀 Try It Now
+
+### 🌐 Live Web App
+No installation required — open and start learning immediately in your browser:
+👉 **[kanjiki.com](https://kanjiki.com)**
+
+- **100% Client-Side SQLite (WASM):** Loads the full 12,000+ kanji dictionary right in your browser tab.
+- **Interactive Stroke Canvas:** Practice drawing kanji strokes in real time.
+- **Works Offline:** Once loaded, your browser caches the app for offline studying.
+- **Cross-Platform Sync:** Sign in to sync your progress between your browser and your phone.
+
+---
+
+### 📱 Android APK (Direct Download)
+Prefer a native Android app? Download the ready-to-install APK directly from GitHub:
+
+1. Head to **[GitHub Releases](https://github.com/YOUR_USERNAME/kanjiapp/releases/latest)**.
+2. Under **Assets**, tap to download **`kanjiki-release.apk`** (or `app-release.apk`).
+3. Open the downloaded file on your Android device to install.
+   *(If prompted by Android, grant permission to "Install unknown apps" for your browser or file manager).*
+4. Launch KanjiKi and enjoy buttery-smooth 120Hz canvas stroke recognition with 100% offline support.
 
 ---
 
@@ -81,15 +118,27 @@ flutter test
 
 ## 📦 Building Releases
 
-### Android APK:
+### Android APK (for GitHub Releases):
 ```bash
-flutter build apk --release --dart-define=SUPABASE_URL="https://your-project.supabase.co" --dart-define=SUPABASE_ANON_KEY="your-anon-key"
-```
+# Build standalone release APK
+flutter build apk --release
 
-### Web Release:
-```bash
-flutter build web --release --dart-define=SUPABASE_URL="https://your-project.supabase.co" --dart-define=SUPABASE_ANON_KEY="your-anon-key"
+# Or build with production cloud sync keys
+flutter build apk --release \
+  --dart-define=SUPABASE_URL="https://your-project.supabase.co" \
+  --dart-define=SUPABASE_ANON_KEY="your-anon-key"
 ```
+The resulting APK is generated at:
+`build/app/outputs/flutter-apk/app-release.apk`
+Attach this file to your GitHub Release as `kanjiki-release.apk`.
+
+### Web Release (for kanjiki.com):
+```bash
+flutter build web --release \
+  --dart-define=SUPABASE_URL="https://your-project.supabase.co" \
+  --dart-define=SUPABASE_ANON_KEY="your-anon-key"
+```
+The web bundle is generated at `build/web` — ready for 1-click deployment on Cloudflare Pages, Vercel, or Netlify.
 
 ---
 

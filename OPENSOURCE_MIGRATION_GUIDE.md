@@ -71,11 +71,10 @@ Before pushing this repository to a public GitHub repository, verify each item:
    - `SUPABASE_URL` = `https://<your-project-id>.supabase.co`
    - `SUPABASE_ANON_KEY` = `<your-supabase-anon-key>`
 
-### Step 2: Configure Custom Domain (e.g. `kanjiki.app` or `kanjiapp.com`)
-1. Purchase a domain from **Cloudflare Registrar**, **Porkbun**, or **Namecheap**.
-2. In Cloudflare Pages, go to **Custom domains** > **Set up a custom domain**.
-3. Enter your domain (e.g., `kanjiki.app` or `app.yourdomain.com`).
-4. If your domain's DNS is managed by Cloudflare, DNS records (`CNAME`) and SSL certificates are created automatically in 1 click!
+### Step 2: Configure Custom Domain (kanjiki.com)
+1. In Cloudflare Pages, go to **Custom domains** > **Set up a custom domain**.
+2. Enter your domain (`kanjiki.com`).
+3. If your domain's DNS is managed by Cloudflare, DNS records (`CNAME`) and SSL certificates are created automatically in 1 click!
 
 ---
 

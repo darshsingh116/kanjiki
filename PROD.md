@@ -13,7 +13,7 @@ Fill in `.env.production` with your real project's values (see `OPENSOURCE_MIGRA
 ```bash
 SUPABASE_URL="https://<project-ref>.supabase.co"
 SUPABASE_ANON_KEY="<anon-key>"
-CADDY_DOMAIN=kanjiki.app   # web only — leave blank for plain HTTP
+CADDY_DOMAIN=kanjiki.com   # web only — leave blank for plain HTTP
 ```
 
 `.env.production` is gitignored — never commit it.
