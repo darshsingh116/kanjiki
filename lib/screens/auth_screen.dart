@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/kanjiki_logo.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback? onContinueAsGuest;
@@ -103,26 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     // Brand Icon & Badge
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.primaryLight, width: 2),
-                        boxShadow: AppStyles.neoShadow(offset: 3),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '気',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                    const KanjiKiLogo(size: 72),
                     const SizedBox(height: 16),
                     const Text(
                       'KanjiKi 漢字気',

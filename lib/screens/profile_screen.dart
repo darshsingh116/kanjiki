@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/db_service.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/kanjiki_logo.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onSignOut;
@@ -355,6 +356,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label: const Text('Sign In / Register for Cloud Sync', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   ),
                 ],
+                const SizedBox(height: 32),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    KanjiKiLogo(size: 24, showShadow: false),
+                    SizedBox(width: 8),
+                    Text(
+                      'KanjiKi • 漢字気 • Spaced Repetition',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

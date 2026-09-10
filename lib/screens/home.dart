@@ -8,6 +8,7 @@ import 'deck_options.dart';
 import 'profile_screen.dart';
 import '../services/sync_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/kanjiki_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSignOut;
@@ -469,20 +470,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppColors.primaryLight, width: 1.5),
-              ),
-              child: const Text('漢字', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(width: 8),
-            const Text(
+            KanjiKiLogo(size: 28, showShadow: false),
+            SizedBox(width: 10),
+            Text(
               'KanjiKi',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
             ),
@@ -532,20 +525,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryLight, width: 2),
-                          boxShadow: AppStyles.neoShadow(offset: 2),
-                        ),
-                        child: const Center(
-                          child: Text('気', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                      const KanjiKiLogo(size: 48),
+                      const SizedBox(height: 12),
                       const Text(
                         'KanjiKi 漢字気',
                         style: TextStyle(

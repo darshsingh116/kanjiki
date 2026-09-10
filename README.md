@@ -1,6 +1,9 @@
-# 💮 KanjiKi (漢字気)
-
-> A modern, multi-platform spaced-repetition Japanese Kanji learning application with offline-first SQLite storage, stroke-order canvas, and secure multi-device cloud synchronization powered by Supabase.
+<div align="center">
+  <img src="assets/icons/kanjiki_icon.svg" width="112" height="112" alt="KanjiKi Logo" />
+  <h1>KanjiKi (漢字気)</h1>
+  <p><strong>A modern, multi-platform spaced-repetition Japanese Kanji learning application</strong></p>
+  <p>Offline-first SQLite storage • Stroke-order recognition canvas • Multi-device cloud sync via Supabase</p>
+</div>
 
 ---
 
