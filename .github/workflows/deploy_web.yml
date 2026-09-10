@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create placeholder .env
+        run: cp .env.example .env
+
       - name: Run unit tests
         run: flutter test
 

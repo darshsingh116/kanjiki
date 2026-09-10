@@ -5,14 +5,17 @@ For step-by-step workflows, use:
 - **[`../DEV.md`](../DEV.md)** — local Supabase backend + `flutter run`
 - **[`../PROD.md`](../PROD.md)** — real Supabase project, web + mobile release builds
 
-This file just documents what each piece actually is.
+This file just documents what each piece actually is. The Vercel deploy is
+separate from all of this: it's a plain static `flutter build web` driven by
+`../vercel.json` (no Docker, no framework preset — Vercel has none for
+Flutter), served from Vercel's CDN.
 
 | File | Purpose |
 | :--- | :--- |
 | `docker-compose.yml` | Dev backend only — Postgres, Auth, PostgREST, Realtime, postgres-meta, Studio, Kong. No app code runs in Docker for dev; use `flutter run`. |
 | `docker-compose.android.yml` | Optional: builds a debug APK in Docker for contributors without a local Android SDK. |
 | `docker-compose.prod.yml` | Prod web deploy — the Flutter Web release build, served by Caddy. |
-| `Dockerfile` | Multi-target: `runtime` (web release + Caddy, default) and `android-debug` (debug APK). Same image (`ghcr.io/cirruslabs/flutter:stable`) as `.github/workflows/*.yml`. |
+| `Dockerfile` | Multi-target: `runtime` (web release + Caddy, last stage = default target for a plain `docker build`) and `android-debug` (debug APK). Same image (`ghcr.io/cirruslabs/flutter:stable`) as `.github/workflows/*.yml`. Used for self-hosted deploys (`docker-compose.prod.yml`) — **not** used by Vercel. |
 | `docker/kong/kong.yml` | Kong declarative config routing `/auth/v1`, `/rest/v1`, `/realtime/v1` to the backend containers, gated by the `ANON_KEY`/`SERVICE_ROLE_KEY` apikey. |
 | `docker/postgres/init/` | Runs once against a fresh `db` volume: `supabase_schema.sql` (mounted directly, not duplicated) then the kanji seed. |
 | `scripts/generate_kanji_seed.sh` | Exports `assets/data/kanji.db` → CSV that `db` auto-loads into `global_kanji` on first boot. |

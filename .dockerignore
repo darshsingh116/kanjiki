@@ -9,12 +9,15 @@ build/
 docker/
 *.md
 
-# Native platforms not needed for `flutter build web`
-android/
+# Native platforms not needed for `flutter build web` or `flutter build apk`
 ios/
 linux/
 macos/
 windows/
+
+# Machine-local SDK paths; the Flutter Gradle plugin regenerates this
+# inside the container.
+android/local.properties
 
 .env
 .env.*

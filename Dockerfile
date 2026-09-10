@@ -2,6 +2,10 @@
 #   runtime        (default) - Flutter Web release build, served by Caddy
 #   android-debug             - Flutter Android debug APK, for `adb install`
 # Mirrors the builds already done in .github/workflows/*.yml.
+#
+# `runtime` MUST stay the last stage in this file: a plain `docker build`
+# (no --target, e.g. Vercel's build) always builds whichever stage is
+# defined last.
 
 # ---- Shared base: fetch deps once ----
 FROM ghcr.io/cirruslabs/flutter:stable AS base
@@ -15,23 +19,6 @@ COPY . .
 # .env is declared as a Flutter asset in pubspec.yaml; flutter_dotenv only
 # needs the file to exist. Real values still come from --dart-define below.
 RUN test -f .env || cp .env.example .env
-
-# ---- Web build ----
-FROM base AS web-build
-
-# Supabase config baked into the JS bundle at compile time (public anon key
-# only — see OPENSOURCE_MIGRATION_GUIDE.md for the security model).
-ARG SUPABASE_URL=""
-ARG SUPABASE_ANON_KEY=""
-
-RUN flutter build web --release \
-    --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
-    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"
-
-# ---- Web runtime (default target) ----
-FROM caddy:2-alpine AS runtime
-COPY --from=web-build /app/build/web /usr/share/caddy
-COPY Caddyfile /etc/caddy/Caddyfile
 
 # ---- Android debug build (dev use: `docker build --target android-debug`) ----
 FROM base AS android-debug
@@ -48,3 +35,20 @@ RUN flutter build apk --debug \
 # is how you get it out; see docker-compose.yml's `android` service and
 # scripts/build_android_debug.sh.
 CMD ["cp", "-r", "/app/build/app/outputs/flutter-apk/.", "/out/"]
+
+# ---- Web build ----
+FROM base AS web-build
+
+# Supabase config baked into the JS bundle at compile time (public anon key
+# only — see OPENSOURCE_MIGRATION_GUIDE.md for the security model).
+ARG SUPABASE_URL=""
+ARG SUPABASE_ANON_KEY=""
+
+RUN flutter build web --release \
+    --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
+    --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"
+
+# ---- Web runtime (default target — must stay last) ----
+FROM caddy:2-alpine AS runtime
+COPY --from=web-build /app/build/web /usr/share/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
