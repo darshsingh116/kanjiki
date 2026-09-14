@@ -44,6 +44,10 @@ Prefer a native Android app? Download the ready-to-install APK directly from Git
 
 ---
 
+
+https://github.com/user-attachments/assets/10dc59ea-2079-4faa-9d51-3fc39d2618e4
+
+
 ## ✨ Features
 
 - 🧠 **Spaced Repetition System (SRS):** SM-2 algorithm optimized for active recall with customizable daily new and review card quotas.
